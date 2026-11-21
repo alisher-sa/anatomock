@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnatoMock — Spotter Exam</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="exam-bg">
+<nav>
+    <a href="index.html" class="logo-fallback">ANATOMOCK</a>
+    <div class="nav-links"><ul>
+        <li><a href="index.html">HOME</a></li>
+        <li><a href="grade.html?g=1">1st GRADE</a></li>
+        <li><a href="grade.html?g=2">2nd GRADE</a></li>
+        <li><a href="grade.html?g=3">3rd GRADE</a></li>
+        <li><a href="student.html">STUDENT</a></li>
+    </ul></div>
+</nav>
+
+<section class="section wide">
+    <div id="head">
+        <h2 class="section-title" id="title"></h2>
+        <p class="section-sub">Choose a block to practice:</p>
+        <div class="tabs" id="tabs"></div>
+    </div>
+
+    <div id="start" class="card" style="max-width:560px;">
+        <span class="badge-pill" id="blk" style="margin-bottom:10px;"></span>
+        <h3>Exam rules</h3>
+        <p style="margin-bottom:14px;">Each numbered needle is one question. You get 10 seconds to prepare, then 15 seconds per question. Type the structure in Latin or English. You cannot go back.</p>
+
+        <div class="qcount-group" id="qcount-group">
+            <button type="button" class="qcount-btn" data-n="10" onclick="pickQCount(10)">10 Questions</button>
+            <button type="button" class="qcount-btn on" data-n="15" onclick="pickQCount(15)">15 Questions</button>
+            <button type="button" class="qcount-btn" data-n="20" onclick="pickQCount(20)">20 Questions</button>
+        </div>
+
+        <p id="count" style="margin-bottom:14px;"></p>
+        <button class="btn" id="go" onclick="begin(false)">Start exam</button>
+    </div>
+
+    <div id="prep" class="hidden prep">
+        <span class="badge-pill">Get ready!</span>
+        <h2 class="section-title" style="margin-top:10px;">Exam starts in…</h2>
+        <div class="ring">
+            <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="54"/><circle class="fg" id="ring-fg" cx="60" cy="60" r="54"/></svg>
+            <div id="prep-num"></div>
+        </div>
+        <div class="prep-emoji"><span>🦴</span><span>🫀</span><span>🧠</span><span>🫁</span></div>
+        <p id="prep-tip" style="margin:14px 0; font-weight:600; min-height:1.5em;"></p>
+        <div class="btn-group">
+            <button class="btn btn-outline" onclick="go()">Skip</button>
+            <button class="btn btn-outline" onclick="cancelPrep()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="exam" class="hidden">
+        <div class="exam-top">
+            <span class="badge-pill" id="qn"></span>
+            <span class="badge-pill" id="tb"></span>
+            <span class="grow"></span>
+            <span class="btn" id="clock">🔔 00:15</span>
+            <button class="btn btn-outline btn-stop" onclick="stopExam()">Stop exam</button>
+        </div>
+        <div class="timer-bar"><i id="bar"></i></div>
+        <div class="exam-grid">
+            <div>
+                <div class="specimen-stage big" id="stage"></div>
+                <p class="hint">Click the photo to zoom in or out</p>
+            </div>
+            <div class="card answer-card">
+                <h3 id="prompt"></h3>
+                <input class="input" id="ans" autocomplete="off" spellcheck="false" placeholder="Type the structure, then press Enter">
+                <button class="btn" onclick="submit()">Submit →</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="result" class="hidden">
+        <div class="card" style="margin-bottom:20px;">
+            <span class="badge-pill">Results</span>
+            <h2 id="score" style="margin:10px 0 6px;"></h2>
+            <p id="stopnote" class="res-bad hidden" style="margin-bottom:10px;"></p>
+            <div class="btn-group" style="justify-content:flex-start; margin-top:8px;">
+                <button class="btn" onclick="begin(false)">Retake</button>
+                <button class="btn btn-outline" id="retry" onclick="begin(true)">Retry missed only</button>
+                <a class="btn btn-outline" href="student.html">Mistake log</a>
+            </div>
+        </div>
+        <div class="card" style="overflow-x:auto;">
+            <table class="table">
+                <thead><tr><th>#</th><th>Question</th><th>Your answer</th><th>Accepted answers</th><th></th></tr></thead>
+                <tbody id="rows"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mini-legal-row">
+        <button class="btn-small" onclick="auth.deleteAccount()">Delete Account</button>
+    </div>
+</section>
+
+<script src="grades.js"></script>
+<script src="i18n.js"></script>
+<script>
+const SECS = 15, $ = id => document.getElementById(id), T = window.T || (s => s);
+const qs = new URLSearchParams(location.search), p = qs.get('g');
+const G = ['1', '2', '3'].includes(p) ? p : '1';
+let tests = [];   // filled once the backend has answered (see the last lines)
+const blocks = BLOCKS[G];
+let block = blocks.includes(qs.get('b')) ? qs.get('b') : blocks[0];
+let qLimit = 15;
+let Q = [], i = 0, answers = [], tick = null, deadline = 0, running = false, going = false, prepT = null, ac;
+
+$('title').textContent = `${ORD[G]} GRADE: Spotter Exam`;
+document.querySelector(`.nav-links a[href$="g=${G}"]`)?.classList.add('panel-pill');
+
+function showPanel(name) {
+    ['start', 'prep', 'exam', 'result'].forEach(id => $(id).classList.toggle('hidden', id !== name));
+    $('head').classList.toggle('hidden', name === 'prep' || name === 'exam');
+}
+const count = b => tests.filter(t => t.block === b).reduce((s, t) => s + t.arrows.length, 0);
+function renderTabs() {
+    $('tabs').innerHTML = blocks.map(b => `<button class="tab${b === block ? ' on' : ''}" data-b="${esc(b)}" onclick="pickBlock(this.dataset.b)"><span>${esc(b)}</span><em>${count(b)}</em></button>`).join('');
+}
+function pickBlock(b) { block = b; renderTabs(); updateCount(); showPanel('start'); }
+function pickQCount(n) {
+    qLimit = n;
+    document.querySelectorAll('.qcount-btn').forEach(b => b.classList.toggle('on', +b.dataset.n === n));
+    updateCount();
+}
+const pool = () => tests.filter(t => t.block === block).flatMap(t => t.arrows.map((a, k) => ({ t, k, a })));
+function updateCount() {
+    const total = pool().length;
+    const n = Math.min(qLimit, total);
+    $('blk').textContent = block;
+    $('count').textContent = total ? `${n} question${n > 1 ? 's' : ''} · ${SECS}s each`
+        : getBackendError() ? 'Could not load the tests. Please refresh the page or try again later.' : 'No tests uploaded for this block yet — add some in the Admin Panel.';
+    $('go').disabled = !total;
+}
+function beep(f = 880, d = 0.15) {
+    try {
+        ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+        const o = ac.createOscillator(); o.frequency.value = f; o.connect(ac.destination);
+        o.start(); o.stop(ac.currentTime + d);
+    } catch {}
+}
+function begin(missedOnly) {
+    if (missedOnly) {
+        Q = Q.filter((_, n) => !answers[n]?.ok);
+    } else {
+        Q = pool();
+        for (let j = Q.length - 1; j > 0; j--) {
+            const k = Math.random() * (j + 1) | 0;
+            [Q[j], Q[k]] = [Q[k], Q[j]];
+        }
+        Q = Q.slice(0, qLimit);
+    }
+    if (!Q.length) return;
+    i = 0; answers = []; running = false;
+    startPrep();
+}
+
+const TIPS = ['Take a deep breath 🫁', 'Red tip = the structure. Grey end = the needle number.', 'Latin or English — both are accepted.', 'Type fast, then press Enter!', 'Small typos on long terms are forgiven.'];
+function popNum(txt, cls) {
+    const el = $('prep-num');
+    el.textContent = txt; el.className = ''; void el.offsetWidth; el.className = cls;
+}
+function startPrep() {
+    showPanel('prep'); going = false;
+    let left = 10;
+    const fg = $('ring-fg');
+    const paint = () => {
+        popNum(left, 'pop');
+        fg.style.strokeDashoffset = 339.3 * (1 - left / 10);
+        fg.style.stroke = `hsl(${left * 12} 75% 38%)`;
+        $('prep-tip').textContent = TIPS[Math.floor((10 - left) / 2) % TIPS.length];
+        beep(left <= 3 ? 880 : 520, 0.08);
+    };
+    clearInterval(prepT);
+    fg.style.transition = 'none'; fg.style.strokeDashoffset = 0;
+    void fg.getBoundingClientRect(); fg.style.transition = '';
+    paint();
+    prepT = setInterval(() => { if (--left > 0) paint(); else go(); }, 1000);
+}
+function go() {
+    if (going) return;
+    going = true; clearInterval(prepT);
+    popNum('GO!', 'go'); beep(1175, 0.4);
+    setTimeout(() => { if (!going) return; showPanel('exam'); running = true; show(); }, 750);
+}
+function cancelPrep() { going = false; clearInterval(prepT); showPanel('start'); }
+
+function show() {
+    const { t, k } = Q[i];
+    renderStage($('stage'), t, k, null, true);
+    $('qn').textContent = `Question ${i + 1} / ${Q.length}`;
+    $('tb').textContent = t.block;
+    $('prompt').textContent = `Name the structure indicated by needle #${k + 1}`;
+    $('ans').value = ''; $('ans').focus();
+    deadline = Date.now() + SECS * 1000;
+    clearInterval(tick);
+    tick = setInterval(() => {
+        const left = deadline - Date.now();
+        $('bar').style.width = Math.max(0, left / (SECS * 10)) + '%';
+        $('bar').classList.toggle('low', left < 5000);
+        $('clock').textContent = '🔔 00:' + String(Math.max(0, Math.ceil(left / 1000))).padStart(2, '0');
+        if (left <= 0) submit();
+    }, 100);
+}
+function submit() {
+    if (!running) return;
+    clearInterval(tick); beep();
+    const given = $('ans').value.trim();
+    answers.push({ given, ok: isCorrect(given, Q[i].a.answers) });
+    if (++i < Q.length) show(); else finish();
+}
+function stopExam() {
+    if (!running) return;
+    const t0 = Date.now();
+    if (!confirm(T('Stop the exam? Your answers so far will be scored.'))) { deadline += Date.now() - t0; return; }
+    finish(true);
+}
+function finish(stopped = false) {
+    running = false; clearInterval(tick);
+    const total = Q.length;
+    if (stopped) {
+        if (!answers.length) return showPanel('start');
+        Q = Q.slice(0, answers.length);
+    }
+    const score = answers.filter(a => a.ok).length;
+    showPanel('result');
+    $('stopnote').classList.toggle('hidden', !stopped);
+    $('stopnote').textContent = `Stopped early — ${answers.length} of ${total} questions answered.`;
+    $('score').textContent = `${score} / ${Q.length} (${Math.round(score / Q.length * 100)}%)`;
+    $('retry').classList.toggle('hidden', score === Q.length);
+    $('rows').innerHTML = Q.map((q, n) => `<tr><td>${n + 1}</td><td>${esc(q.t.topic)} · needle #${q.k + 1}</td>
+        <td class="${answers[n].ok ? 'res-ok' : 'res-bad'}">${esc(answers[n].given || '— no answer —')}</td>
+        <td>${esc(q.a.answers.join(' / '))}</td><td>${answers[n].ok ? '✓' : '✗'}</td></tr>`).join('');
+    saveMistakes(Q.map((q, n) => ({ key: `${q.t.id}-${q.k}`, ok: answers[n].ok, testId: q.t.id, k: q.k, grade: G, block: q.t.block, topic: q.t.topic, given: answers[n].given, ans: q.a.answers.join(' / ') })))
+        .catch(err => console.error('Could not save the mistake log:', err));
+}
+$('ans').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+showPanel('start');
+$('count').textContent = 'Loading…'; $('go').disabled = true;
+appReady.then(() => {                       // wait for the backend before reading the tests
+    tests = getAllTests().filter(t => t.grade === G);
+    renderTabs(); updateCount(); showPanel('start');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noimageindex">
+    <title>AnatoMock — Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="panel-layout hidden" id="admin-workspace">
+    <aside class="sidebar">
+        <h2>ADMIN PANEL</h2>
+        <button class="side-link active">Upload Tests</button>
+        <a href="grade.html?g=1" class="side-link">View 1st Grade</a>
+        <a href="grade.html?g=2" class="side-link">View 2nd Grade</a>
+        <a href="grade.html?g=3" class="side-link">View 3rd Grade</a>
+        <button class="side-link" onclick="auth.logOut()" style="margin-top:auto;">Log Out Admin</button>
+        <a href="index.html" class="side-link">← Back to Home</a>
+    </aside>
+    <main class="panel-main">
+        <h2 class="section-title">Upload a Specimen Photo</h2>
+        <p class="section-sub">Pick the grade and block (e.g. Thorax) the photo belongs to, click the photo to place numbered needles, and list the accepted answers for each needle.</p>
+        <div class="grid-2" style="align-items:start;">
+            <div class="card">
+                <h3>1. Photo</h3>
+                <select class="input" id="grade" onchange="fillBlocks()">
+                    <option value="1">1st Grade</option><option value="2">2nd Grade</option><option value="3">3rd Grade</option>
+                </select>
+                <select class="input" id="block"></select>
+                <input class="input" id="topic" list="topics" placeholder="Specimen name (optional, e.g. Heart)">
+                <datalist id="topics"></datalist>
+                <input class="input" id="file-inp" type="file" accept="image/*" onchange="loadFile(this.files[0])">
+                <input class="input" id="url" placeholder="…or paste an image URL" onchange="loadUrl(this.value)">
+                <input class="input" id="src" placeholder="Source credit (e.g. Anatomy Lab Maket)" oninput="draw()">
+
+                <h3 style="margin-top:8px;">2. Needles &amp; accepted answers</h3>
+                <label style="font-size:.82rem; font-weight:700;">Rotate selected needle</label>
+                <input type="range" id="ang" min="0" max="359" value="225" style="width:100%; margin-bottom:10px;">
+                <div id="arrows"></div>
+                <p style="font-size:.8rem; margin:6px 0 14px;">Separate accepted answers with “;” — include Latin and English</p>
+                <button class="btn" id="pub-btn" style="width:100%;" onclick="publish()">Upload to Grade Page</button>
+            </div>
+            <div>
+                <div class="card" style="margin-bottom:20px;">
+                    <h3>Click the photo to place the needle tip</h3>
+                    <div class="specimen-stage big" id="stage" style="cursor:crosshair; margin-top:10px;"></div>
+                </div>
+                <div class="card" style="overflow-x:auto;">
+                    <h3>Uploaded tests</h3>
+                    <table class="table">
+                        <thead><tr><th>Grade</th><th>Block</th><th>Specimen</th><th>Needles</th><th></th></tr></thead>
+                        <tbody id="tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="grades.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let previewSrc = '', fileBlob = null, externalUrl = '', arrows = [], sel = -1;
+
+// No sign-in screen here. The server decides who is admin; anyone else is sent to the home page.
+function checkAdminAccess() {
+    if (!auth.isAdmin()) {
+        if (getSupabaseError()) alert('Backend error: ' + getSupabaseError());
+        location.replace('index.html');
+        return;
+    }
+    $('admin-workspace').classList.remove('hidden');
+    draw();
+    renderTable();
+}
+
+function resetStage() {
+    previewSrc = ''; fileBlob = null; externalUrl = ''; arrows = []; sel = -1;
+    $('file-inp').value = ''; $('url').value = '';
+    draw();
+}
+
+function loadUrl(u) {
+    if (!u.trim()) return;
+    fileBlob = null;
+    externalUrl = u.trim();
+    previewSrc = externalUrl;
+    arrows = []; sel = -1;
+    draw();
+}
+
+function loadFile(f) {
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+        const im = new Image();
+        im.onload = () => {
+            const s = Math.min(1, 1100 / Math.max(im.width, im.height));
+            const c = document.createElement('canvas');
+            c.width = Math.round(im.width * s);
+            c.height = Math.round(im.height * s);
+            c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+            c.toBlob(blob => {
+                fileBlob = blob;
+                externalUrl = '';
+                previewSrc = URL.createObjectURL(blob);
+                arrows = []; sel = -1;
+                draw();
+            }, 'image/jpeg', 0.82);
+        };
+        im.src = r.result;
+    };
+    r.readAsDataURL(f);
+}
+
+function place(x, y) { arrows.push({ x, y, angle: +$('ang').value, text: '' }); sel = arrows.length - 1; draw(); }
+function pick(i) { sel = i; $('ang').value = arrows[i].angle; draw(); }
+function del(i) { arrows.splice(i, 1); sel = arrows.length - 1; draw(); }
+$('ang').oninput = e => { if (sel >= 0) { arrows[sel].angle = +e.target.value; draw(); } };
+
+function draw() {
+    if (previewSrc) renderStage($('stage'), { img: previewSrc, arrows, src: $('src').value.trim() }, sel, place);
+    else $('stage').textContent = 'Upload a photo to begin.';
+    $('arrows').innerHTML = arrows.map((a, i) => `<div class="arrow-row ${i === sel ? 'sel' : ''}">
+        <button class="btn btn-outline" onclick="pick(${i})">#${i + 1}</button>
+        <input class="input" value="${esc(a.text)}" placeholder="Latin; English; synonyms" oninput="arrows[${i}].text=this.value">
+        <button class="btn btn-outline" onclick="del(${i})">✕</button></div>`).join('') || '<p>No needles yet — click the photo.</p>';
+}
+function fillBlocks() { $('block').innerHTML = BLOCKS[$('grade').value].map(b => `<option>${esc(b)}</option>`).join(''); }
+
+async function publish() {
+    const block = $('block').value, topic = $('topic').value.trim() || block;
+    const data = arrows.map(a => ({ x: a.x, y: a.y, angle: a.angle, answers: a.text.split(/[;\n]/).map(s => s.trim()).filter(Boolean) }));
+    if ((!fileBlob && !externalUrl) || !data.length || data.some(a => !a.answers.length)) {
+        return alert('Please add a photo, at least one needle, and accepted answers for every needle.');
+    }
+    const grade = $('grade').value;
+    $('pub-btn').disabled = true;
+    $('pub-btn').textContent = 'Uploading to Cloud Storage…';
+    try {
+        await uploadTestToCloud({
+            grade,
+            block,
+            topic,
+            fileBlob,
+            externalUrl,
+            src: $('src').value.trim() || 'Anatomy Lab Maket',
+            arrows: data
+        });
+        const n = getAllTests().filter(t => t.grade === grade && t.block === block).reduce((s, t) => s + t.arrows.length, 0);
+        resetStage();
+        renderTable();
+        alert(`Uploaded to Grade ${grade} · ${block}! That block now has ${n} question(s).`);
+    } catch (err) {
+        alert('Upload failed: ' + err.message);
+    } finally {
+        $('pub-btn').disabled = false;
+        $('pub-btn').textContent = 'Upload to Grade Page';
+    }
+}
+
+async function removeTest(id) {
+    if (!confirm('Delete this test and its stored photo?')) return;
+    try { await deleteTestFromCloud(id); } catch (err) { alert('Delete failed: ' + err.message); }
+    renderTable();
+}
+async function moveTest(id, block) {
+    try { await moveTestBlockInCloud(id, block); } catch (err) { alert('Move failed: ' + err.message); }
+    renderTable();
+}
+function renderTable() {
+    const all = getAllTests();
+    $('topics').innerHTML = [...new Set(all.map(t => t.topic))].map(t => `<option value="${esc(t)}">`).join('');
+    $('tbody').innerHTML = all.map(t => `<tr><td><span class="badge-pill">Grade ${esc(t.grade)}</span></td>
+        <td><select class="input" style="margin:0; padding:6px 10px;" onchange="moveTest(${t.id}, this.value)">${BLOCKS[t.grade].map(b => `<option${b === t.block ? ' selected' : ''}>${esc(b)}</option>`).join('')}</select></td>
+        <td>${esc(t.topic)}</td><td>${t.arrows.length}</td>
+        <td><button class="btn btn-outline" style="padding:4px 10px;font-size:.75rem;" onclick="removeTest(${t.id})">Delete</button></td></tr>`).join('');
+}
+
+fillBlocks();
+appReady.then(checkAdminAccess);
+</script>
+</body>
+</html>

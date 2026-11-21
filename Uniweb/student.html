@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnatoMock — Student Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="student-bg">
+
+<div class="panel-layout">
+    <aside class="sidebar">
+        <h2>STUDENT PANEL</h2>
+        <a href="grade.html?g=1" class="side-link">1st Grade Tests</a>
+        <a href="grade.html?g=2" class="side-link">2nd Grade Tests</a>
+        <a href="grade.html?g=3" class="side-link">3rd Grade Tests</a>
+        <button class="side-link" id="student-signin-btn" onclick="auth.openModal('login')">Sign In / Log In</button>
+        <button class="side-link hidden" id="student-signout-btn" onclick="auth.logOut()">Sign Out / Log Out</button>
+        <a href="index.html" class="side-link" style="margin-top:auto;">← Back to Home</a>
+    </aside>
+
+    <main class="panel-main">
+        <div class="student-top-zone">
+            <h2 class="section-title">Select Your Class</h2>
+            <p class="section-sub">Jump directly to your grade's exam bank.</p>
+
+            <div class="grid-3">
+                <div class="card">
+                    <span class="badge-pill" style="margin-bottom:8px;">Year 1</span>
+                    <h3>1st Grade</h3>
+                    <p style="margin-bottom:16px;">Upper &amp; Lower Limb, General Anatomy</p>
+                    <a href="grade.html?g=1" class="btn">Open 1st Grade</a>
+                </div>
+                <div class="card">
+                    <span class="badge-pill" style="margin-bottom:8px;">Year 2</span>
+                    <h3>2nd Grade</h3>
+                    <p style="margin-bottom:39px;">Neuroanatomy</p>
+                    <a href="grade.html?g=2" class="btn btn-outline">Open 2nd Grade</a>
+                </div>
+                <div class="card">
+                    <span class="badge-pill" style="margin-bottom:8px;">Year 3</span>
+                    <h3>3rd Grade</h3>
+                    <p style="margin-bottom:16px;">Clinical Anatomy</p>
+                    <a href="grade.html?g=3" class="btn btn-outline">Open 3rd Grade</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="student-bottom-zone">
+            <h2 class="section-title">Your Mistake Log (Revision Deck)</h2>
+            <p class="section-sub">Questions you missed during Exam-Mode are automatically lined here.</p>
+            <div class="card">
+                <table class="table">
+                    <thead>
+                        <tr><th>Photo</th><th>Grade · Topic</th><th>Your answer</th><th>Correct answer</th><th>Action</th></tr>
+                    </thead>
+                    <tbody id="mistake-body"></tbody>
+                </table>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px;">
+                    <button class="btn btn-outline" onclick="clearMistakes()">Clear Revision Deck</button>
+                    <button class="btn-small" onclick="auth.deleteAccount()">Delete Account</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="grades.js"></script>
+<script src="i18n.js"></script>
+<script>
+async function loadMistakes() {
+    await appReady;
+    const tb = document.getElementById('mistake-body');
+    let list = [];
+    try { list = await getMistakes(); } catch (err) { console.error(err); }
+    const tests = getAllTests();
+    if (!list.length) {
+        tb.innerHTML = '<tr><td colspan="5">No mistakes logged yet. Take an exam from your Grade page!</td></tr>';
+        return;
+    }
+    tb.innerHTML = list.map((m, i) => `
+        <tr>
+            <td><div class="specimen-stage mini" id="m${i}"></div></td>
+            <td><span class="badge-pill">Grade ${esc(m.grade)}</span> ${esc(m.block || m.topic)}<br><small>Needle #${m.k + 1}</small></td>
+            <td class="res-bad">${esc(m.given || '— no answer —')}</td>
+            <td class="res-ok">${esc(m.ans)}</td>
+            <td><a href="grade.html?g=${esc(m.grade)}&b=${encodeURIComponent(m.block || '')}" class="btn btn-outline" style="padding:6px 14px; font-size:0.78rem;">Retest</a></td>
+        </tr>`).join('');
+    list.forEach((m, i) => {
+        const t = tests.find(t => t.id === m.testId);
+        if (t) renderStage(document.getElementById('m' + i), t, m.k);
+    });
+}
+async function clearMistakes() {
+    try { await clearAllMistakes(); } catch (err) { alert(err.message); }
+    loadMistakes();
+}
+loadMistakes();
+</script>
+</body>
+</html>

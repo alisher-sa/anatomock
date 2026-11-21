@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnatoMock - Practice Together</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<section class="header" id="home">
+    <nav>
+        <a href="index.html" class="logo-fallback">
+            <img src="images/logo.png" alt="AnatoMock" onerror="this.style.display='none'; this.parentNode.textContent='ANATOMOCK';">
+        </a>
+        <div class="nav-links">
+            <ul>
+                <li><a href="#home">HOME</a></li>
+                <li><a href="#exam-mode">EXAM-MODE</a></li>
+                <li><a href="#revision">REVISION</a></li>
+                <li><a href="#why-us">WHY US?</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="#contact">CONTACT</a></li>
+                <li><a href="student.html" class="panel-pill">STUDENT</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="hero-box">
+        <span class="badge-pill" style="margin-bottom:12px;">Real Specimens · Active Recall</span>
+        <h1>Practice Together</h1>
+        <p>Questions and active recall using real anatomical specimens and classical plates.</p>
+        <div class="btn-group">
+            <a href="#exam-mode" class="btn">Start Exam-Mode</a>
+        </div>
+    </div>
+    <div></div>
+</section>
+    
+<section class="section" id="exam-mode">
+    <h2 class="section-title">EXAM-MODE: Select Your Class</h2>
+    <p class="section-sub"><b>Choose your current grade to launch class and block specific tests and topics uploaded</b></p>
+
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="btn-group" style="justify-content:flex-start;">
+            <a href="grade.html?g=1" class="btn">1st GRADE</a>
+            <a href="grade.html?g=2" class="btn btn-outline">2nd GRADE</a>
+            <a href="grade.html?g=3" class="btn btn-outline">3rd GRADE</a>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="specimen-stage" id="sample"></div>
+        <div class="card">
+            <span class="badge-pill" style="margin-bottom:10px;">Sample Question (Thorax block; 1st Grade)</span>
+            <h3 id="spotter-q">Heart Specimen — Identify needle 1:</h3>
+            <input class="input" id="sample-ans" placeholder="Type your answer (Latin or English)" onkeydown="if(event.key==='Enter')checkSample()">
+            <button class="btn" onclick="checkSample()">Check</button>
+            <p id="spotter-feedback" style="margin-top:12px; font-weight:700;"></p>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="revision">
+    <h2 class="section-title">REVISIONS: High-Yield Atlas</h2>
+    <p class="section-sub"><b>Structural Images for Students to RETAIN knowledge</b></p>
+
+    <div class="grid-3">
+        <div class="card">
+            <div class="specimen-stage" style="height:200px; margin-bottom:14px;">
+                <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Gray115.png" alt="Thorax">
+            </div>
+            <h3>Thoracic Cage</h3>
+            <p>True ribs (1–7), false ribs (8–10), floating ribs (11–12), and sternal angle at T4/T5.</p>
+        </div>
+
+        <div class="card">
+            <div class="specimen-stage" style="height:200px; margin-bottom:14px;">
+                <img src="https://radiologykey.com/wp-content/uploads/2020/05/10-1055-b-004-135649_c016_f003a.jpg" alt="Skull">
+            </div>
+            <h3>Cranial Base &amp; Foramina</h3>
+            <p>Foramen magnum, ovale (V3), spinosum (MMA), and jugular foramen (CN IX, X, XI).</p>
+        </div>
+
+        <div class="card">
+            <div class="specimen-stage" style="height:200px; margin-bottom:14px;">
+                <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Gray490.png" alt="Heart">
+            </div>
+            <h3>Coronary Circulation</h3>
+            <p>LAD supplies anterior 2/3 of septum; PDA determines coronary dominance.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="why-us">
+    <h2 class="section-title">WHY US?</h2>
+    <p class="section-sub"><b>ZERO DISTRACTIONS. PURE PREPARATION :)</b></p>
+    <div class="grid-3">
+        <div class="card">
+            <h3>1. Real Specimens Only</h3>
+            <p>Study from <b>real cadaveric dissections, photos, and <i>PRACTICE ENDLESSLY</i></b>.</p>
+        </div>
+        <div class="card">
+            <h3>2. Simulated Bell Timer</h3>
+            <p>30-second station rotations for 2 questions (15 sec - each) to <b>eliminate exam-day panic</b>.</p>
+        </div>
+        <div class="card">
+            <h3>3. Mistake Log</h3>
+            <p>Mistakes are automatically lined into your <b>Student Revision deck</b>.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="faq">
+    <h2 class="section-title">FAQ</h2>
+    <p class="section-sub"><b>Everything you need to know about US</b></p>
+    <div class="grid-3">
+        <div class="card">
+            <h3>Why should I choose you?</h3>
+            <p>As AnatoMock team, we provide never-ending support for your anatomical studies. Plus, we mostly cover real-case scenarios which will definitely help our users to grow and master in the exams.</p>
+        </div>
+        <div class="card">
+            <h3>How realistic is your "Exam-mode"?</h3>
+            <p>Very. Every question uses numbered pins with bell-simulators. At the end of your exam, we collect and provide data about how "well" you did — To See How Fast You're "GROWING" With US ;)</p>
+        </div>
+        <div class="card">
+            <h3>Can I switch to English/Latin terms?</h3>
+            <p>Yes, standard Latin and English Nomina Anatomica terms are supported.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="contact">
+    <h2 class="section-title">CONTACT</h2>
+    <div class="card" style="max-width:480px;">
+        <input class="input" id="ct-name" type="text" placeholder="Your Name">
+        <input class="input" id="ct-email" type="email" placeholder="Email">
+        <textarea class="input" id="ct-msg" rows="3" placeholder="Message"></textarea>
+        <button class="btn" id="ct-btn" onclick="sendFeedback()">Send Message</button>
+        <p id="ct-status" style="margin-top:10px; font-weight:700;"></p>
+    </div>
+
+    <div class="mini-legal-row">
+        <a href="legal.html#privacy" class="btn-small">KVKK &amp; Privacy Policy</a>
+        <a href="legal.html#terms" class="btn-small">Terms of Service</a>
+        <a href="legal.html#disclaimer" class="btn-small">Medical Disclaimer</a>
+    </div>
+</section>
+
+<script>
+async function sendFeedback() {
+    const T = window.T || (s => s);
+    const name = document.getElementById('ct-name').value.trim();
+    const email = document.getElementById('ct-email').value.trim();
+    const msg = document.getElementById('ct-msg').value.trim();
+    const status = document.getElementById('ct-status');
+    const btn = document.getElementById('ct-btn');
+
+    if (!name || !email || !msg) {
+        status.className = 'res-bad';
+        status.textContent = T('Please fill in all fields.');
+        return;
+    }
+
+    const BOT_TOKEN = '9212014915:AAHWy5s-Ixdb_x6K5zLQq8ra5m6aVWu9_6Y';
+    const CHAT_ID = '1571738256';
+
+    btn.disabled = true;
+    try {
+        const text = `📩 *New AnatoMock Feedback*\n👤 *Name:* ${name}\n✉️ *Email:* ${email}\n💬 *Message:* ${msg}`;
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: 'Markdown' })
+        });
+        if (!res.ok) throw new Error();
+        status.className = 'res-ok';
+        status.textContent = T('Message sent!');
+        document.getElementById('ct-name').value = '';
+        document.getElementById('ct-email').value = '';
+        document.getElementById('ct-msg').value = '';
+    } catch {
+        status.className = 'res-bad';
+        status.textContent = 'Failed to send. Please try again.';
+    } finally {
+        btn.disabled = false;
+    }
+}
+</script>
+
+<script src="grades.js"></script>
+<script src="i18n.js"></script>
+<script>
+renderStage(document.getElementById('sample'), {
+    img: 'https://my.clevelandclinic.org/-/scassets/images/org/health/articles/21704-heart-inside',
+    src: 'Source: Cleveland Clinic',
+    arrows: [{ x: 55, y: 48, angle: 225 }]
+}, 0);
+
+function checkSample() {
+    const ok = isCorrect(document.getElementById('sample-ans').value, ['Aotic Valve', 'Valvus Aorticus']);
+    const fb = document.getElementById('spotter-feedback');
+    fb.className = ok ? 'res-ok' : 'res-bad';
+    fb.textContent = ok ? 'Correct! Pick your Grade above for full timed exams.' : 'Not quite — pick your Grade above to practice.';
+}
+</script>
+</body>
+</html>
